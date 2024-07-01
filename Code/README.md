@@ -4,14 +4,16 @@ This application will support you to keep on track your daily tasks, show you th
 Introduction
 
 The main idea is create an app that you can list and organize your daily tasks (personal and professional), with a low effort however with a good traceability and organization, something simple like create comments in the "Notepad", but 
-with a big impact to manage these tasks, especially because can be combined with different organization tecniques (is more one tools in your tool box set).
-Basically the app is a Database, organized in a logic way that you can include the tasks and can classify based on their priority in your life, complexity (how long time you need to dedicate on) and focused to accomplish the due date, the most interest part is create a weight matrix/algorithm that based on these info be able to ranking the tasks and suggest a order to approach them in a efficient way.
+with a big impact to manage these tasks, especially because can be combined with different organization techniques (is more one tool in your tool box set).
+Basically the app is a Database, organized in a logic way that you can include the tasks and can classify based on their priority in your life, complexity (how long time you need to dedicate on) and focused to accomplish the due date, the most interest part is create a weight matrix/algorithm that based on these info be able to ranking the tasks and suggest an order to approach them in a efficient way.
 
 Some basic requirements for this project are:
 
 Run in Windows and Linux
 Don't need to install (just a simple executable file)
 Be simple and effective, do not overcomplicate and able to offer you suggestions
+
+
 
 
 To start in this project:
@@ -25,6 +27,8 @@ To start in this project:
 4 - Clone the project from github
 
 5 - Start to use and develop
+
+
 
 
 Python (Code language)
