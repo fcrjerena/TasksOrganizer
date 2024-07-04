@@ -13,8 +13,10 @@ Run in Windows and Linux
 Don't need to install (just a simple executable file)
 Be simple and effective, do not overcomplicate and able to offer you suggestions
 
-
-
+What you will find in each folder:
+Code: Project Code (Python scripts, configuration file)
+DevEnvironment: The requirements.txt will help you to install all you need in your Python environment
+ProjectManagement: Excel sheet that I describe how it works the wheight matrix, SW requirements and Backlog to tracking the SW improvements, bug fixes and etc...
 
 To start in this project:
 
