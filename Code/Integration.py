@@ -52,14 +52,16 @@ def display_table(data):
 
     # Function to close the database connection and the Tkinter window
     def onClosing():
-        global filePath
+        # global filePath
 
-        if messagebox.askokcancel("Quit", "Do you want to quit?"):
-            # Close the database connection
-            #sqliteConnection.close()    
-            print("Deu certo!!!")        
-            # Destroy the Tkinter window
-            root.destroy()
+        # if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        #     # Close the database connection
+        #     #sqliteConnection.close()    
+        #     print("Deu certo!!!")        
+        #     # Destroy the Tkinter window
+        #     root.destroy()
+        root.destroy()
+        None
 
     # Create Tkinter window
     root = tk.Tk()
@@ -163,7 +165,7 @@ class TasksOrganizer(tk.Tk):
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(pady=10, expand=True)
 
-        self.createSystemConfigurationTab()
+        self.createSystemConfigurationTab()        
         self.createTasksManagementTab()
         self.createFiltersTab()
 
@@ -536,13 +538,22 @@ class TasksOrganizer(tk.Tk):
                 self.databasePathEntry.insert(0, fileName)                
                 cursor.execute('SELECT * FROM tasks')
                 rows = cursor.fetchall()
-                display_table(rows)
-                sqliteConnection.close()
                 messagebox.showinfo("Database Loaded", f"Database loaded from {filePath}")
+                display_table(rows)                
+                
             except sqlite3.Error as e:
                 self.databasePathEntry.delete(0, tk.END)
                 self.databasePathEntry.insert(0, "Empty")
                 messagebox.showerror("Error", f"Failed to load database: {e}")
+            
+            finally:               
+                sqliteConnection.close()
+                
+                # After closing connection object, we 
+                # will print "the sqlite connection is 
+                # closed"
+                print("The SQlite connection is closed!")
+                
 
     def getNextTaskID(self):
         global filePath
@@ -555,39 +566,39 @@ class TasksOrganizer(tk.Tk):
         if maxId is None:
             return 1
         else:
-            return maxId + 1
-        
+            return maxId + 1    
+
     def includeNewTask(self):
-        newTaskWindow = tk.Toplevel(self)
-        newTaskWindow.title("New Task")        
+        self.newTaskWindow = tk.Toplevel(self)
+        self.newTaskWindow.title("New Task")        
         lastTaskid = self.getNextTaskID()
 
         self.labels = [
-            ("Task ID number", tk.Entry(newTaskWindow, width=4, state='normal'), lastTaskid),
-            ("Label", tk.Entry(newTaskWindow, width=50), ""),
-            ("Description", tk.Text(newTaskWindow, width=32, height=8), ""),
-            ("Priority", ttk.Combobox(newTaskWindow, values=["Very_Low", "Low", "Medium", "High", "Very_High"]), "Very_High"),
-            ("Complexity", ttk.Combobox(newTaskWindow, values=["Super_Slow", "Slow", "Medium", "Fast", "Super_Fast"]), "Super_Fast"),
-            ("Deadline", tk.Entry(newTaskWindow, state='normal'), datetime.now().strftime("%Y-%m-%d")),
-            ("Main Task ID", tk.Entry(newTaskWindow, width=4), ""),
-            ("Blockers", tk.Text(newTaskWindow, width=32, height=8), ""),
-            ("Created", tk.Entry(newTaskWindow, state = 'normal'), datetime.now().strftime("%Y-%m-%d")),
-            #("Status", ttk.Combobox(newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active"),
-            ("Status", ttk.Combobox(newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active")
-            #("Comments", tk.Text(newTaskWindow, width=32, height=8, state='disabled'), "")           
+            ("Task ID number", tk.Entry(self.newTaskWindow, width=4, state='normal'), lastTaskid),
+            ("Label", tk.Entry(self.newTaskWindow, width=50), ""),
+            ("Description", tk.Text(self.newTaskWindow, width=32, height=8), ""),
+            ("Priority", ttk.Combobox(self.newTaskWindow, values=["Very_Low", "Low", "Medium", "High", "Very_High"]), "Very_High"),
+            ("Complexity", ttk.Combobox(self.newTaskWindow, values=["Super_Slow", "Slow", "Medium", "Fast", "Super_Fast"]), "Super_Fast"),
+            ("Deadline", tk.Entry(self.newTaskWindow, state='normal'), datetime.now().strftime("%Y-%m-%d")),
+            ("Main Task ID", tk.Entry(self.newTaskWindow, width=4), ""),
+            ("Blockers", tk.Text(self.newTaskWindow, width=32, height=8), ""),
+            ("Created", tk.Entry(self.newTaskWindow, state = 'normal'), datetime.now().strftime("%Y-%m-%d")),
+            #("Status", ttk.Combobox(self.newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active"),
+            ("Status", ttk.Combobox(self.newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active")
+            #("Comments", tk.Text(self.newTaskWindow, width=32, height=8, state='disabled'), "")           
         ]
 
         for i, (label, widget, default_value) in enumerate(self.labels):
-            ttk.Label(newTaskWindow, text=label).grid(row=i, column=0, padx=10, pady=5)
+            ttk.Label(self.newTaskWindow, text=label).grid(row=i, column=0, padx=10, pady=5)
             widget.grid(row=i, column=1, padx=10, pady=5)
             if isinstance(widget, tk.Entry):
                 widget.insert(0, default_value)
             elif isinstance(widget, ttk.Combobox):
                 widget.set(default_value)
 
-        self.createNewTaskButton = ttk.Button(newTaskWindow, text="Create New Task", command=self.saveNewTask)
-        self.createNewTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)
-    
+        self.createNewTaskButton = ttk.Button(self.newTaskWindow, text="Create New Task", command=self.saveNewTask)
+        self.createNewTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)        
+
     def saveNewTask(self):
         task_values = {}
         for label, widget, default_value in self.labels:
@@ -613,16 +624,22 @@ class TasksOrganizer(tk.Tk):
         #     elif isinstance(widget, tk.Label):
         #         task_values[label] = widget.cget("text")        
                 
+        if task_values['Deadline'] == "":
+            task_values['Deadline'] = None
         if task_values['Main Task ID'] == "":
             task_values['Main Task ID'] = None
         if task_values['Blockers'] == "":
             task_values['Blockers'] = None     
-        
+        #Includ a new one
+        task_values['Comments'] = None
         # Database insertion
         self.insertTaskIntoDatabase(task_values)
 
         #Message to inform the user if the database was updated correctly        
         messagebox.showinfo("Information", "The new task was included in the database with success!!!")
+
+        #Close the form after to insert the new task
+        self.newTaskWindow.destroy()
 
     def insertTaskIntoDatabase(self, task_values):
         global filePath
@@ -647,47 +664,136 @@ class TasksOrganizer(tk.Tk):
         """	
         cursor.execute(query)
         
-        cursor.execute('''INSERT INTO tasks (label, description, priority, complexity, deadline, main_task_id, blockers, created, status) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+        cursor.execute('''INSERT INTO tasks (label, description, priority, complexity, deadline, main_task_id, blockers, created, status, comments) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                           (task_values["Label"], task_values["Description"], 
                            task_values["Priority"], task_values["Complexity"], task_values["Deadline"], 
-                           #task_values["Main Task ID"], task_values["Blockers"], task_values["Created"], task_values["Status"], task_values["Comments"]))                           
-                           task_values["Main Task ID"], task_values["Blockers"], task_values["Created"], task_values["Status"]))
+                           task_values["Main Task ID"], task_values["Blockers"], task_values["Created"], task_values["Status"], task_values["Comments"]))
          
         sqliteConnection.commit()
         cursor.close()
         sqliteConnection.close()    
 
-    def editTask(self):
-        editTaskWindow = tk.Toplevel(self)
-        editTaskWindow.title("Edit Task")
+    def getAllTaskIDs(self):
+        global filePath
 
-        labels = [
-            ("Task ID", ttk.Combobox(editTaskWindow), ""),
-            ("Label", tk.Entry(editTaskWindow, width=50), ""),
-            ("Description", tk.Text(editTaskWindow, width=32, height=8), ""),
-            ("Priority", ttk.Combobox(editTaskWindow, values=["Very_Low", "Low", "Medium", "High", "Very_High"]), ""),
-            ("Complexity", ttk.Combobox(editTaskWindow, values=["Super_Slow", "Slow", "Medium", "Fast", "Super_Fast"]), ""),
-            ("Deadline", DateEntry(editTaskWindow), ""),
-            ("Empty", tk.Checkbutton(editTaskWindow, text="Empty"), ""),
-            ("Main Task ID", tk.Entry(editTaskWindow, width=4), ""),
-            ("Blockers", tk.Text(editTaskWindow, width=32, height=8), ""),
-            ("Created", tk.Entry(editTaskWindow), datetime.now().strftime("%Y-%m-%d")),
-            ("Status", ttk.Combobox(editTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), ""),
-            ("Comments", tk.Text(editTaskWindow, width=32, height=8), "")
+        conn = sqlite3.connect(filePath)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM tasks")
+        taskIDs = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return taskIDs
+
+    def editTask(self):
+        self.taskIDs = self.getAllTaskIDs()
+        self.editTaskWindow = tk.Toplevel(self)
+        self.editTaskWindow.title("Edit Task")
+
+        self.labels = [
+            ("Task ID", ttk.Combobox(self.editTaskWindow, values=self.taskIDs), ""),
+            ("Label", tk.Entry(self.editTaskWindow, width=50), ""),
+            ("Description", tk.Text(self.editTaskWindow, width=32, height=8), ""),
+            ("Priority", ttk.Combobox(self.editTaskWindow, values=["Very_Low", "Low", "Medium", "High", "Very_High"]), ""),
+            ("Complexity", ttk.Combobox(self.editTaskWindow, values=["Super_Slow", "Slow", "Medium", "Fast", "Super_Fast"]), ""),
+            ("Deadline", tk.Entry(self.editTaskWindow, state='normal'), ""),
+            ("Main Task ID", tk.Entry(self.editTaskWindow, width=4), ""),
+            ("Blockers", tk.Text(self.editTaskWindow, width=32, height=8), ""),
+            ("Created", tk.Entry(self.editTaskWindow, state = 'normal'), ""),
+            ("Status", ttk.Combobox(self.editTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), ""),
+            ("Comments", tk.Text(self.editTaskWindow, width=32, height=8), "")
         ]
 
-        for i, (label, widget, default_value) in enumerate(labels):
-            ttk.Label(editTaskWindow, text=label).grid(row=i, column=0, padx=10, pady=5)
+        self.widgets = {}
+        for i, (label, widget, default_value) in enumerate(self.labels):
+            ttk.Label(self.editTaskWindow, text=label).grid(row=i, column=0, padx=10, pady=5)
             widget.grid(row=i, column=1, padx=10, pady=5)
+            self.widgets[label] = widget
             if isinstance(widget, tk.Entry):
                 widget.insert(0, default_value)
 
-        self.searchByIDButton = ttk.Button(editTaskWindow, text="Search by ID")
+        self.searchByIDButton = ttk.Button(self.editTaskWindow, text="Search by ID", command=self.searchByID)        
         self.searchByIDButton.grid(row=0, column=2, padx=10, pady=5)
 
-        self.editTaskButton = ttk.Button(editTaskWindow, text="Edit Task")
-        self.editTaskButton.grid(row=len(labels), column=0, columnspan=2, pady=10)
+        self.editTaskButton = ttk.Button(self.editTaskWindow, text="Edit Task", command=self.saveEditedTask)
+        self.editTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)
+
+    def searchByID(self):
+        global filePath
+
+        task_id = self.widgets["Task ID"].get()
+        sqliteConnection = sqlite3.connect(filePath)
+        cursor = sqliteConnection.cursor()
+        cursor.execute("SELECT id, label, description, priority, complexity, deadline, main_task_id, blockers, created, status, comments FROM tasks WHERE id = ?", (task_id,))
+        task = cursor.fetchone()
+        sqliteConnection.close()        
+
+        if task:
+            columns = ["Task ID", "Label", "Description", "Priority", "Complexity", "Deadline", "Main Task ID", "Blockers", "Created", "Status", "Comments"]
+            for col, value in zip(columns, task):
+                widget = self.widgets[col]
+                if isinstance(widget, tk.Entry):
+                    widget.delete(0, tk.END)
+                    if value == None:
+                        value = ""
+                    widget.insert(0, value)
+                elif isinstance(widget, tk.Text):
+                    widget.delete("1.0", tk.END)
+                    if value == None:
+                        value = ""
+                    widget.insert("1.0", value)
+                elif isinstance(widget, ttk.Combobox):
+                    if value == None:
+                        value = ""
+                    widget.set(value)
+        else:
+            tk.messagebox.showerror("Error", "Task ID not found!")   
+
+    def saveEditedTask(self):
+        task_values = {}
+        for label, widget, default_value in self.labels:
+            if isinstance(widget, tk.Entry):
+                task_values[label] = widget.get()
+            elif isinstance(widget, tk.Text):
+                task_values[label] = widget.get("1.0", tk.END).strip()
+            elif isinstance(widget, ttk.Combobox):
+                task_values[label] = widget.get()
+            elif isinstance(widget, DateEntry):
+                date_value = widget.get_date()
+                task_values[label] = date_value if date_value else None
+
+        if task_values['Deadline'] == "":
+            task_values['Deadline'] = None      
+        if task_values['Main Task ID'] == "":
+            task_values['Main Task ID'] = None
+        if task_values['Blockers'] == "":
+            task_values['Blockers'] = None    
+        if task_values['Comments'] == "":
+            task_values['Comments'] = None
+        
+        # Database insertion
+        self.updateTaskIntoDatabase(task_values)
+
+        #Message to inform the user if the database was updated correctly        
+        messagebox.showinfo("Information", "The task edited was updated with success!!!")
+
+        #Close the form after edit the new task
+        self.editTaskWindow.destroy()
+
+    def updateTaskIntoDatabase(self, task_values):
+        global filePath
+
+        sqliteConnection = sqlite3.connect(filePath)
+        cursor = sqliteConnection.cursor()
+                
+        cursor.execute('''UPDATE tasks SET label=?, description=?, priority=?, complexity=?, deadline=?, main_task_id=?, blockers=?, created=?, status=?, comments=? 
+                          WHERE id=?''', 
+                          (task_values["Label"], task_values["Description"], 
+                           task_values["Priority"], task_values["Complexity"], task_values["Deadline"], 
+                           task_values["Main Task ID"], task_values["Blockers"], task_values["Created"], task_values["Status"], task_values["Comments"], task_values["Task ID"]))
+         
+        sqliteConnection.commit()
+        cursor.close()
+        sqliteConnection.close()
 
     def updateRank(self):
         global filePath
@@ -746,8 +852,11 @@ class TasksOrganizer(tk.Tk):
     # Function to check if a string is a valid date
     def isValidDate(self, dateStr):
         try:
-            datetime.strptime(dateStr, '%Y-%m-%d')
-            return True
+            if dateStr == None:
+                return False
+            else:
+                datetime.strptime(dateStr, '%Y-%m-%d')
+                return True
         except ValueError:
             return False
     
