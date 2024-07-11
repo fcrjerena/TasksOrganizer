@@ -241,7 +241,7 @@ class TasksOrganizer(tk.Tk):
         tasksManagementFrame.pack(fill="both", expand="yes", padx=20, pady=10)
         
         buttonNames = ["Include New Task", "Edit Task", "Update Rank", "Generate Daily Task List", "List Dependencies"]
-        buttonCommands = [self.includeNewTask, self.editTask, self.updateRankNew, self.stub, self.stub]
+        buttonCommands = [self.includeNewTask, self.editTask, self.updateRankNew, self.generateDailyTaskList, self.listDependencies]
         maxButtonWidth = max([len(name) for name in buttonNames])
 
         for name, command in zip(buttonNames, buttonCommands):
@@ -269,7 +269,7 @@ class TasksOrganizer(tk.Tk):
         self.filtersCombobox = ttk.Combobox(filterFrame, values=filterOptions, width=max([len(option) for option in filterOptions]))
         self.filtersCombobox.pack(side=tk.LEFT, padx=5)
 
-        self.showTheListWithFilterAppliedButton = ttk.Button(filterFrame, text="Show The List With Filter Applied")
+        self.showTheListWithFilterAppliedButton = ttk.Button(filterFrame, text="Show The List With Filter Applied", command=self.applyFilter)
         self.showTheListWithFilterAppliedButton.pack(side=tk.LEFT, padx=5)
 
     
@@ -948,8 +948,65 @@ class TasksOrganizer(tk.Tk):
         #Message to inform the user if the database was updated correctly        
         messagebox.showinfo("Information", "The Rank was updated with success!!!")        
 
-    def stub(self):
-        pass
+    def generateDailyTaskList(self):
+        global filePath
+
+        # Connect to the SQLite database
+        sqliteConnection = sqlite3.connect(filePath)
+        cursor = sqliteConnection.cursor()        
+
+        # Query to fetch priority and delay from the tasks table
+        query = """
+        SELECT * FROM tasks
+        WHERE (status = "Active") ORDER BY rank DESC LIMIT 5;
+        """   
+        cursor.execute(query)
+        rows = cursor.fetchall()     
+        display_table(rows)    
+
+    def listDependencies(self):
+        global filePath
+
+        # Connect to the SQLite database
+        sqliteConnection = sqlite3.connect(filePath)
+        cursor = sqliteConnection.cursor()        
+
+        # Query to fetch priority and delay from the tasks table
+        query = """
+        SELECT * FROM tasks
+        WHERE ((main_task_id IS NOT NULL) AND (status = "Active" OR status = "Blocked"));
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()     
+        display_table(rows)   
+
+    def applyFilter(self):
+        global filePath
+
+        # Connect to the SQLite database
+        sqliteConnection = sqlite3.connect(filePath)
+        cursor = sqliteConnection.cursor()        
+
+        # Dictionary mapping words to specific SQL queries
+        queryDict = {
+            'FilterTasksByPriority': "SELECT * FROM tasks ORDER by priority DESC",
+            'FilterTasksByComplexity': "SELECT * FROM tasks ORDER by complexity DESC",
+            'FilterTasksByDelay': "SELECT * from tasks ORDER BY delay DESC",
+            'FilterTasksByRank': "SELECT * from tasks ORDER BY rank DESC",
+            'FilterTasksByMostDelayedTasks': "SELECT * FROM tasks ORDER BY delay DESC",
+            'FilterTasksByCriticality': "SELECT * FROM tasks WHERE status = 'Active'",
+            'FilterTasksStatusActive': "SELECT * FROM tasks WHERE status = 'Active'",
+            'FilterTasksStatusAborted': "SELECT * FROM tasks WHERE status = 'Aborted'",
+            'FilterTasksStatusBlocked': "SELECT * FROM tasks WHERE status = 'Blocked'",
+            'FilterTasksStatusDone': "SELECT * FROM tasks WHERE status = 'Done'",
+            'FilterTasksWithDependencies': "SELECT * FROM tasks WHERE status = 'Active' AND main_task_id IS NOT NULL"      
+        }
+
+        # Query to fetch priority and delay from the tasks table
+        query = queryDict.get(self.filtersCombobox.get(), None)       
+        cursor.execute(query)
+        rows = cursor.fetchall()     
+        display_table(rows)          
 
 if __name__ == "__main__":
     app = TasksOrganizer()
