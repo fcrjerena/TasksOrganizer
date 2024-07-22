@@ -65,7 +65,7 @@ def display_table(data):
 
     # Create Tkinter window
     root = tk.Tk()
-    root.title("SQLite Data Table")
+    root.title("Task's Database (SQLite)")
 
     # Create a style and configure the Treeview for alternating row colors
     style = ttk.Style()
@@ -110,10 +110,10 @@ def display_table(data):
     tree.column('Description', width=255, anchor='w')
     tree.column('Priority', width=80, anchor='center')
     tree.column('Complexity', width=80, anchor='center')
-    tree.column('Deadline', width=100, anchor='center')
-    tree.column('Main Task ID', width=50, anchor='center')
-    tree.column('Blockers', width=255, anchor='w')
-    tree.column('Created', width=100, anchor='center')
+    tree.column('Deadline', width=80, anchor='center')
+    tree.column('Main Task ID', width=80, anchor='center')
+    tree.column('Blockers', width=150, anchor='w')
+    tree.column('Created', width=80, anchor='center')
     tree.column('Delay', width=50, anchor='center')
     tree.column('Rank', width=50, anchor='center')
     tree.column('Status', width=50, anchor='center')
@@ -231,13 +231,13 @@ class TasksOrganizer(tk.Tk):
 
         
     def createTasksManagementTab(self):
-        tab2 = ttk.Frame(self.notebook)
-        self.notebook.add(tab2, text="Tasks Management")
+        self.tab2 = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab2, text="Tasks Management", state="disabled")
         
         # Add vertical space
-        ttk.Label(tab2, text="").pack()
+        ttk.Label(self.tab2, text="").pack()
 
-        tasksManagementFrame = ttk.LabelFrame(tab2, text="App functionalities")
+        tasksManagementFrame = ttk.LabelFrame(self.tab2, text="App functionalities")
         tasksManagementFrame.pack(fill="both", expand="yes", padx=20, pady=10)
         
         buttonNames = ["Include New Task", "Edit Task", "Update Rank", "Generate Daily Task List", "List Dependencies"]
@@ -249,22 +249,22 @@ class TasksOrganizer(tk.Tk):
             button.pack(fill=tk.X, anchor=tk.W, padx=10, pady=5)
 
     def createFiltersTab(self):
-        tab3 = ttk.Frame(self.notebook)
-        self.notebook.add(tab3, text="Filters")
+        self.tab3 = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab3, text="Filters", state="disabled")
         
         # Add vertical space
-        ttk.Label(tab3, text="").pack()
+        ttk.Label(self.tab3, text="").pack()
 
-        filterFrame = ttk.Frame(tab3)
+        filterFrame = ttk.Frame(self.tab3)
         filterFrame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(filterFrame, text="Filters").pack(side=tk.LEFT)
 
         filterOptions = [
-            "FilterTasksByPriority", "FilterTasksByComplexity", "FilterTasksByDelay",
-            "FilterTasksByRank", "FilterTasksByMostDelayedTasks", "FilterTasksByCriticality",
-            "FilterTasksStatusActive", "FilterTasksStatusAborted", "FilterTasksStatusBlocked",
-            "FilterTasksStatusDone", "FilterTasksWithDependencies"
+            "NoFilter", "FilterTasksByRank", "FilterTasksStatusActive", "FilterTasksStatusBlocked",
+            "FilterTasksByMostDelayedTasks", "FilterTasksByPriority", "FilterTasksByComplexity", 
+            "FilterTasksByCriticality", "FilterTasksStatusDone", "FilterTasksStatusAborted", 
+            "FilterTasksbyDateCreated"
         ]
         self.filtersCombobox = ttk.Combobox(filterFrame, values=filterOptions, width=max([len(option) for option in filterOptions]))
         self.filtersCombobox.pack(side=tk.LEFT, padx=5)
@@ -274,18 +274,18 @@ class TasksOrganizer(tk.Tk):
 
     
     def createStatisticsTab(self):        
-        tab4 = ttk.Frame(self.notebook)
-        self.notebook.add(tab4, text="Statistics")
+        self.tab4 = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab4, text="Statistics", state="disabled")
         
         # Add vertical space
-        ttk.Label(tab4, text="").pack()
+        ttk.Label(self.tab4, text="").pack()
 
-        ttk.Label(tab4, text="Here you can find information about the active database").pack(anchor=tk.W, padx=10, pady=5)
+        ttk.Label(self.tab4, text="Here you can find information about the active database").pack(anchor=tk.W, padx=10, pady=5)
 
         statisticsFields = ["Aborted", "Active", "Blocked", "Done"]
         self.statisticsEntries = {}
         for field in statisticsFields:
-            frame = ttk.Frame(tab4)
+            frame = ttk.Frame(self.tab4)
             frame.pack(anchor=tk.W, padx=10, pady=5)
             ttk.Label(frame, text=f"Tasks with status equal {field}").pack(side=tk.LEFT)
             entry = ttk.Entry(frame, width=10, state='readonly')
@@ -293,21 +293,21 @@ class TasksOrganizer(tk.Tk):
             self.statisticsEntries[field.lower()] = entry
 
         #Extra lines
-        frame = ttk.Frame(tab4)
+        frame = ttk.Frame(self.tab4)
         frame.pack(anchor=tk.W, padx=10, pady=5)
         ttk.Label(frame, text=f"Tasks with dependencies").pack(side=tk.LEFT)
         entry = ttk.Entry(frame, width=10, state='readonly')
         entry.pack(side=tk.LEFT, padx=5)
         self.statisticsEntries['dependencies'] = entry    
 
-        frame = ttk.Frame(tab4)
+        frame = ttk.Frame(self.tab4)
         frame.pack(anchor=tk.W, padx=10, pady=5)
         ttk.Label(frame, text=f"Total task number").pack(side=tk.LEFT)
         entry = ttk.Entry(frame, width=10, state='readonly')
         entry.pack(side=tk.LEFT, padx=5)
         self.statisticsEntries['total'] = entry
         
-        self.generateTheGraphButton = ttk.Button(tab4, text="Generate The Graph", command=self.generateTheGraph)
+        self.generateTheGraphButton = ttk.Button(self.tab4, text="Generate The Graph", command=self.generateTheGraph)
         self.generateTheGraphButton.pack(anchor=tk.W, padx=10, pady=5)
 
     def onTabChanged(self, event):
@@ -413,6 +413,9 @@ class TasksOrganizer(tk.Tk):
 
         graph1list = []	
 
+        #In test, forcing the tuple should be a list... :^)
+        tuple_read = [1,2,3,4]
+
         for x in range(4):
             tuple_read = y[x]
             data = tuple_read[0]
@@ -434,15 +437,21 @@ class TasksOrganizer(tk.Tk):
         
         graph2list = []	
 
+        
         #Esse trecho está dando pau e eu preciso entender o que está acontecendo, o codigo no else é que está funcionando
-        if y[0] == (0,):
-            tuple_read.append(1) 
-            graph2list.append(1)
-            graph2list.append(37)
-        else:	
-            tuple_read = y[0]
-            graph2list.append(tuple_read[0])
-            graph2list.append(graph1list[1]-graph2list[0])	
+        # if y[0] == (0,):
+        #     tuple_read.append(1) 
+        #     graph2list.append(1)
+        #     graph2list.append(37)
+        # else:	
+        #     tuple_read = y[0]
+        #     graph2list.append(tuple_read[0])
+        #     graph2list.append(graph1list[1]-graph2list[0])	
+
+        #In test...
+        tuple_read = y[0]
+        graph2list.append(tuple_read[0])
+        graph2list.append(graph1list[1]-graph1list[0])
         
         #Configure the graph 2 (Secondary)
         mylabels = ["Critical","Non Critical"]
@@ -524,10 +533,11 @@ class TasksOrganizer(tk.Tk):
         global filePath,fileName
 
         filePath = filedialog.askopenfilename(filetypes=[("SQLite Database", "*.db")])
+
         if filePath:
             try:
-                sqliteConnection = sqlite3.connect(filePath)
-                cursor = sqliteConnection.cursor()
+                #sqliteConnection = sqlite3.connect(filePath)
+                #cursor = sqliteConnection.cursor()
                 self.databasePathEntry.delete(0, tk.END)
                 #My test
                 # Get the base name (file name with extension)
@@ -536,10 +546,13 @@ class TasksOrganizer(tk.Tk):
                 fileName, _ = os.path.splitext(baseName)
                 #self.databasePathEntry.insert(0, filePath)
                 self.databasePathEntry.insert(0, fileName)                
-                cursor.execute('SELECT * FROM tasks')
-                rows = cursor.fetchall()
-                messagebox.showinfo("Database Loaded", f"Database loaded from {filePath}")
-                display_table(rows)                
+                #cursor.execute('SELECT * FROM tasks')
+                #rows = cursor.fetchall()
+                messagebox.showinfo("Information", f"Database loaded from {filePath}")
+                #display_table(rows)    
+                self.notebook.add(self.tab2, text="Tasks Management", state="normal")  
+                self.notebook.add(self.tab3, text="Filters", state="normal")   
+                self.notebook.add(self.tab4, text="Statistics", state="normal")  
                 
             except sqlite3.Error as e:
                 self.databasePathEntry.delete(0, tk.END)
@@ -547,12 +560,12 @@ class TasksOrganizer(tk.Tk):
                 messagebox.showerror("Error", f"Failed to load database: {e}")
             
             finally:               
-                sqliteConnection.close()
+                #sqliteConnection.close()
                 
                 # After closing connection object, we 
                 # will print "the sqlite connection is 
                 # closed"
-                print("The SQlite connection is closed!")
+                print("The database is already open!")
                 
 
     def getNextTaskID(self):
@@ -583,9 +596,7 @@ class TasksOrganizer(tk.Tk):
             ("Main Task ID", tk.Entry(self.newTaskWindow, width=4), ""),
             ("Blockers", tk.Text(self.newTaskWindow, width=32, height=8), ""),
             ("Created", tk.Entry(self.newTaskWindow, state = 'normal'), datetime.now().strftime("%Y-%m-%d")),
-            #("Status", ttk.Combobox(self.newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active"),
-            ("Status", ttk.Combobox(self.newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active")
-            #("Comments", tk.Text(self.newTaskWindow, width=32, height=8, state='disabled'), "")           
+            ("Status", ttk.Combobox(self.newTaskWindow, values=["Active", "Aborted", "Blocked", "Done"]), "Active")                      
         ]
 
         for i, (label, widget, default_value) in enumerate(self.labels):
@@ -597,7 +608,47 @@ class TasksOrganizer(tk.Tk):
                 widget.set(default_value)
 
         self.createNewTaskButton = ttk.Button(self.newTaskWindow, text="Create New Task", command=self.saveNewTask)
-        self.createNewTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)        
+        self.createNewTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)    
+
+         # Bind the Label Entry to the length check function
+        self.LabelEntry = self.labels[1][1]
+        self.LabelEntry.bind("<KeyRelease>", self.checkLengthLabel)
+
+        # Bind the Description textbox to the length check function
+        self.TextboxDescription = self.labels[2][1]
+        self.TextboxDescription.bind("<KeyRelease>", self.checkLengthDescription)  
+
+        # Bind the Blockers textbox to the length check function
+        self.TextboxBlockers = self.labels[7][1]
+        self.TextboxBlockers.bind("<KeyRelease>", self.checkLengthBlockers)
+    
+    def checkLengthLabel(self, event):
+        # Get the current content of the Description textbox
+        content = self.LabelEntry.get()
+        
+        # Check if the length exceeds 255 characters
+        if len(content) > 50:
+            # If so, remove the extra characters
+            self.LabelEntry.delete(0, tk.END)
+            self.LabelEntry.insert(0, content[:50])
+
+    def checkLengthDescription(self, event):
+        # Get the current content of the Description textbox
+        content = self.TextboxDescription.get("1.0", tk.END)
+        
+        # Check if the length exceeds 255 characters
+        if len(content) > 255:
+            # If so, remove the extra characters
+            self.TextboxDescription.delete("1.0 + 255c", tk.END)     
+
+    def checkLengthBlockers(self, event):
+        # Get the current content of the Description textbox
+        content = self.TextboxBlockers.get("1.0", tk.END)
+        
+        # Check if the length exceeds 255 characters
+        if len(content) > 255:
+            # If so, remove the extra characters
+            self.TextboxBlockers.delete("1.0 + 255c", tk.END)         
 
     def saveNewTask(self):
         task_values = {}
@@ -640,6 +691,9 @@ class TasksOrganizer(tk.Tk):
 
         #Close the form after to insert the new task
         self.newTaskWindow.destroy()
+
+        #Update the rank after to include a new task
+        self.updateRankNew()
 
     def insertTaskIntoDatabase(self, task_values):
         global filePath
@@ -715,7 +769,7 @@ class TasksOrganizer(tk.Tk):
         self.searchByIDButton.grid(row=0, column=2, padx=10, pady=5)
 
         self.editTaskButton = ttk.Button(self.editTaskWindow, text="Edit Task", command=self.saveEditedTask)
-        self.editTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)
+        self.editTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)        
 
     def searchByID(self):
         global filePath
@@ -776,8 +830,11 @@ class TasksOrganizer(tk.Tk):
         #Message to inform the user if the database was updated correctly        
         messagebox.showinfo("Information", "The task edited was updated with success!!!")
 
-        #Close the form after edit the new task
+        #Close the form after edit the task
         self.editTaskWindow.destroy()
+
+        #Update the rank after to edit a task
+        self.updateRankNew()
 
     def updateTaskIntoDatabase(self, task_values):
         global filePath
@@ -955,7 +1012,7 @@ class TasksOrganizer(tk.Tk):
         sqliteConnection = sqlite3.connect(filePath)
         cursor = sqliteConnection.cursor()        
 
-        # Query to fetch priority and delay from the tasks table
+        # Query to fetch priority and delay fromopendatabeopenthe tasks table
         query = """
         SELECT * FROM tasks
         WHERE (status = "Active") ORDER BY rank DESC LIMIT 5;
@@ -983,30 +1040,33 @@ class TasksOrganizer(tk.Tk):
     def applyFilter(self):
         global filePath
 
-        # Connect to the SQLite database
-        sqliteConnection = sqlite3.connect(filePath)
-        cursor = sqliteConnection.cursor()        
+        if self.filtersCombobox.get():
+            # Connect to the SQLite database
+            sqliteConnection = sqlite3.connect(filePath)
+            cursor = sqliteConnection.cursor()        
 
-        # Dictionary mapping words to specific SQL queries
-        queryDict = {
-            'FilterTasksByPriority': "SELECT * FROM tasks ORDER by priority DESC",
-            'FilterTasksByComplexity': "SELECT * FROM tasks ORDER by complexity DESC",
-            'FilterTasksByDelay': "SELECT * from tasks ORDER BY delay DESC",
-            'FilterTasksByRank': "SELECT * from tasks ORDER BY rank DESC",
-            'FilterTasksByMostDelayedTasks': "SELECT * FROM tasks ORDER BY delay DESC",
-            'FilterTasksByCriticality': "SELECT * FROM tasks WHERE status = 'Active'",
-            'FilterTasksStatusActive': "SELECT * FROM tasks WHERE status = 'Active'",
-            'FilterTasksStatusAborted': "SELECT * FROM tasks WHERE status = 'Aborted'",
-            'FilterTasksStatusBlocked': "SELECT * FROM tasks WHERE status = 'Blocked'",
-            'FilterTasksStatusDone': "SELECT * FROM tasks WHERE status = 'Done'",
-            'FilterTasksWithDependencies': "SELECT * FROM tasks WHERE status = 'Active' AND main_task_id IS NOT NULL"      
-        }
+            # Dictionary mapping words to specific SQL queries
+            queryDict = {
+                'NoFilter': "SELECT * FROM tasks",
+                'FilterTasksByPriority': "SELECT * FROM tasks ORDER by priority DESC",
+                'FilterTasksByComplexity': "SELECT * FROM tasks ORDER by complexity DESC",            
+                'FilterTasksByRank': "SELECT * from tasks ORDER BY rank DESC",
+                'FilterTasksByMostDelayedTasks': "SELECT * FROM tasks ORDER BY delay DESC",
+                'FilterTasksByCriticality': "SELECT * FROM tasks WHERE (julianday(deadline) > julianday(date()))",
+                'FilterTasksStatusActive': "SELECT * FROM tasks WHERE status = 'Active'",
+                'FilterTasksStatusAborted': "SELECT * FROM tasks WHERE status = 'Aborted'",
+                'FilterTasksStatusBlocked': "SELECT * FROM tasks WHERE status = 'Blocked'",
+                'FilterTasksStatusDone': "SELECT * FROM tasks WHERE status = 'Done'",
+                'FilterTasksbyDateCreated': "SELECT * FROM tasks ORDER BY created"      
+            }
 
-        # Query to fetch priority and delay from the tasks table
-        query = queryDict.get(self.filtersCombobox.get(), None)       
-        cursor.execute(query)
-        rows = cursor.fetchall()     
-        display_table(rows)          
+            # Query to fetch priority and delay from the tasks table
+            query = queryDict.get(self.filtersCombobox.get(), None)       
+            cursor.execute(query)
+            rows = cursor.fetchall()     
+            display_table(rows)          
+        else:
+            messagebox.showinfo("Attention!!!","Please select a value from the combobox before to apply a filter")
 
 if __name__ == "__main__":
     app = TasksOrganizer()
