@@ -475,6 +475,7 @@ class TasksOrganizer(tk.Tk):
 
         ttk.Label(tab5, text="Software Version 1.0").pack(anchor=tk.W, padx=10, pady=5)
         ttk.Label(tab5, text="This software was idealized and created by Fabio Jerena").pack(anchor=tk.W, padx=10, pady=5)
+        ttk.Label(tab5, text="Sweden, 2024-07-22").pack(anchor=tk.W, padx=10, pady=5)
 
         # Placeholder for logo image
         # Automatically discover the script directory
@@ -492,10 +493,11 @@ class TasksOrganizer(tk.Tk):
         self.newDbNameEntry = ttk.Entry(newDbWindow, width=50)
         self.newDbNameEntry.grid(row=0, column=1, padx=10, pady=5)
 
-        saveAsButton = ttk.Button(newDbWindow, text="Save As", command=self.saveAsNewDatabase)
+        #saveAsButton = ttk.Button(newDbWindow, text="Save As", command=self.saveAsNewDatabase)
+        saveAsButton = ttk.Button(newDbWindow, text="Save As", command=lambda nw=newDbWindow: self.saveAsNewDatabase(nw))
         saveAsButton.grid(row=0, column=2, padx=10, pady=5)
 
-    def saveAsNewDatabase(self):
+    def saveAsNewDatabase(self, newDbWindow):
         global dbName
 
         dbName = self.newDbNameEntry.get()
@@ -526,8 +528,12 @@ class TasksOrganizer(tk.Tk):
             """	
 
             cursor.execute(query)
-            sqliteConnection.close()
+            sqliteConnection.close()            
+
             messagebox.showinfo("Database Created", f"Database {dbName} created successfully at {filePath}")
+
+            #Close the form
+            newDbWindow.destroy()            
 
     def openDatabase(self):
         global filePath,fileName
