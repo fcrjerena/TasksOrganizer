@@ -4,11 +4,13 @@ import sqlite3
 from datetime import datetime
 from tkcalendar import DateEntry
 import os
+import json
 import yaml
 import matplotlib
 matplotlib.use('TkAgg',force=True)      #I put this but I still have the problem...
 from matplotlib import pyplot as plt
 import numpy as np
+import inspect
 
 def display_table(data):
     def sort_column(tree, col, reverse):
@@ -173,30 +175,7 @@ class TasksOrganizer(tk.Tk):
         # Bind the NotebookTabChanged event to the handler
         self.notebook.bind('<<NotebookTabChanged>>', self.onTabChanged)            
 
-        self.createAboutTab()
-
-    def createSystemConfigurationTabDeletar(self):
-        tab1 = ttk.Frame(self.notebook)
-        self.notebook.add(tab1, text="System Configuration")
-        
-        # Add vertical space
-        ttk.Label(tab1, text="").pack()
-
-        systemConfigFrame = ttk.LabelFrame(tab1, text="System Configuration")
-        systemConfigFrame.pack(fill="both", expand="yes", padx=20, pady=10)
-
-        self.createANewDatabaseButton = ttk.Button(systemConfigFrame, text="Create A New Database", command=self.createNewDatabase)
-        self.createANewDatabaseButton.pack(fill=tk.X, anchor=tk.W, padx=10, pady=5)
-        
-        openDatabaseFrame = ttk.Frame(systemConfigFrame)
-        openDatabaseFrame.pack(fill=tk.X, padx=10, pady=5)
-
-        self.openDatabaseFromButton = ttk.Button(openDatabaseFrame, text="Open Database", command=self.openDatabase)
-        self.openDatabaseFromButton.pack(side=tk.LEFT, fill=tk.X)
-
-        self.databasePathEntry = ttk.Entry(openDatabaseFrame, width=50)
-        self.databasePathEntry.insert(0, "Empty")        
-        self.databasePathEntry.pack(side=tk.LEFT, padx=5)
+        self.createAboutTab()            
 
     def createSystemConfigurationTab(self):
         tab1 = ttk.Frame(self.notebook)
@@ -223,6 +202,36 @@ class TasksOrganizer(tk.Tk):
         self.databasePathEntry = ttk.Entry(openDatabaseFrame, width=50)
         self.databasePathEntry.insert(0, "Empty")        
         self.databasePathEntry.grid(row=0, column=1, padx=5, sticky="ew")
+
+        # databasesHistoric = [
+        #     "NoFilter", "FilterTasksByRank", "FilterTasksStatusActive", "FilterTasksStatusBlocked",
+        #     "FilterTasksByMostDelayedTasks", "FilterTasksByPriority", "FilterTasksByComplexity", 
+        #     "FilterTasksByCriticality", "FilterTasksStatusDone", "FilterTasksStatusAborted", 
+        #     "FilterTasksbyDateCreated"        
+        
+        # self.historicCombobox = ttk.Combobox(openDatabaseFrame, values=databasesHistoric, width=max([len(option) for option in databasesHistoric]))
+        # self.historicCombobox.pack(side=tk.LEFT, padx=5)
+
+        #self.history = ["file1.db", "file2.db", "file3.db"]  # Example list of opened files
+
+        self.historyFile = 'dbHistory.json'
+        self.history = self.loadHistory()
+        
+        #self.databasePathCombo = ttk.Combobox(openDatabaseFrame, values=[name for name, path in self.history], width=50)
+        numberOfElementsInCombobox = max_length = max(len(name) for name, path in self.history) if self.history else 50         
+        self.databasePathCombo = ttk.Combobox(openDatabaseFrame, values=[name for name, path in self.history], width=numberOfElementsInCombobox)
+        #self.databasePathCombo = ttk.Combobox(openDatabaseFrame, values=self.history, width=50)
+
+        #Aqui eu devo colocar o ultimo valor incluído no arquivo
+        # Set the combobox to the latest database
+        # if self.history:
+        #     self.databasePathCombo.set(self.history[-1][0])
+        # else:
+        #     self.databasePathCombo.set("Empty")
+        
+        self.databasePathCombo.set("Empty")
+        
+        self.databasePathCombo.grid(row=0, column=1, padx=5, sticky="ew")
 
         openDatabaseFrame.grid_columnconfigure(1, weight=1)  # Make the entry box expand to fill available space
 
@@ -427,26 +436,14 @@ class TasksOrganizer(tk.Tk):
         mylabels = status_list
         mycolors = ["m", "b", "lightblue", "lightgreen"] 
         myexplode = [0, 0, 0, 0]
-        textprops = {"fontsize":10} # Font size of text in pie chart	
-
-        #plt.pie(y, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=270, radius = 1.2, autopct=autopct_format(y), textprops =textprops)
+        textprops = {"fontsize":10} # Font size of text in pie chart
+        
         ax2.pie(y, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=270, radius = 0.8, autopct=autopct_format(y), textprops =textprops)
         
         cursor.execute("SELECT COUNT(*) FROM tasks WHERE (status = 'Active' AND (rank > 100));")
         y = cursor.fetchall() 
         
         graph2list = []	
-
-        
-        #Esse trecho está dando pau e eu preciso entender o que está acontecendo, o codigo no else é que está funcionando
-        # if y[0] == (0,):
-        #     tuple_read.append(1) 
-        #     graph2list.append(1)
-        #     graph2list.append(37)
-        # else:	
-        #     tuple_read = y[0]
-        #     graph2list.append(tuple_read[0])
-        #     graph2list.append(graph1list[1]-graph2list[0])	
 
         #In test...
         tuple_read = y[0]
@@ -462,9 +459,7 @@ class TasksOrganizer(tk.Tk):
         new_var = ax1.pie(graph2list, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=90, radius = 1.0, autopct=autopct_format(graph2list), textprops =textprops)
         ax1.legend(title = "Status 'Active'", loc="upper left")
 
-        plt.show(block=False)
-        # plt.draw()
-        # plt.pause(0.001)
+        plt.show(block=False)        
 
     def createAboutTab(self):
         tab5 = ttk.Frame(self.notebook)
@@ -533,46 +528,63 @@ class TasksOrganizer(tk.Tk):
             messagebox.showinfo("Database Created", f"Database {dbName} created successfully at {filePath}")
 
             #Close the form
-            newDbWindow.destroy()            
+            newDbWindow.destroy()         
+            
+    def loadHistory(self):
+        try:
+            with open(self.historyFile, 'r') as file:
+                return json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+    def saveHistory(self):
+        with open(self.historyFile, 'w') as file:
+            json.dump(self.history, file)
 
     def openDatabase(self):
         global filePath,fileName
 
-        filePath = filedialog.askopenfilename(filetypes=[("SQLite Database", "*.db")])
+        databaseNameSelected = self.databasePathCombo.get()
+
+        if databaseNameSelected == 'Empty':
+            filePath = filedialog.askopenfilename(filetypes=[("SQLite Database", "*.db")])
+        else:
+            for name, path in self.history:
+                if name == databaseNameSelected:
+                    filePath = path         
 
         if filePath:
             try:
-                #sqliteConnection = sqlite3.connect(filePath)
-                #cursor = sqliteConnection.cursor()
-                self.databasePathEntry.delete(0, tk.END)
-                #My test
+                #self.databasePathCombo.set("")
+                
                 # Get the base name (file name with extension)
                 baseName = os.path.basename(filePath)
+
                 # Split the base name to separate the name and the extension
                 fileName, _ = os.path.splitext(baseName)
-                #self.databasePathEntry.insert(0, filePath)
-                self.databasePathEntry.insert(0, fileName)                
-                #cursor.execute('SELECT * FROM tasks')
-                #rows = cursor.fetchall()
+
+                # Insert fileName into the combobox
+                self.databasePathCombo.set(fileName)
+
+                # Update history                
+                if not any(fileName == name and filePath == path for name, path in self.history):
+                    self.history.append((fileName, filePath))
+                    self.databasePathCombo['values'] = [name for name, path in self.history]
+                    self.saveHistory()
+                    
                 messagebox.showinfo("Information", f"Database loaded from {filePath}")
-                #display_table(rows)    
-                self.notebook.add(self.tab2, text="Tasks Management", state="normal")  
-                self.notebook.add(self.tab3, text="Filters", state="normal")   
-                self.notebook.add(self.tab4, text="Statistics", state="normal")  
-                
+
+                self.notebook.add(self.tab2, text="Tasks Management", state="normal")
+                self.notebook.add(self.tab3, text="Filters", state="normal")
+                self.notebook.add(self.tab4, text="Statistics", state="normal")
+
             except sqlite3.Error as e:
-                self.databasePathEntry.delete(0, tk.END)
-                self.databasePathEntry.insert(0, "Empty")
+                self.databasePathCombo.set("Empty")
                 messagebox.showerror("Error", f"Failed to load database: {e}")
-            
-            finally:               
-                #sqliteConnection.close()
-                
-                # After closing connection object, we 
-                # will print "the sqlite connection is 
-                # closed"
-                print("The database is already open!")
-                
+
+            finally:
+                # sqliteConnection.close()
+                print("The database is already open!")                
 
     def getNextTaskID(self):
         global filePath
@@ -668,25 +680,14 @@ class TasksOrganizer(tk.Tk):
             elif isinstance(widget, DateEntry):
                 date_value = widget.get_date()
                 task_values[label] = date_value if date_value else None
-
-        # for label, widget, default_value in self.labels:
-        #     if isinstance(widget, tk.Entry):
-        #         task_values[label] = widget.get()
-        #     elif isinstance(widget, tk.Text):
-        #         task_values[label] = widget.get("1.0", tk.END).strip()
-        #     elif isinstance(widget, ttk.Combobox):
-        #         task_values[label] = widget.get()
-        #     elif isinstance(widget, DateEntry):
-        #         task_values[label] = widget.get_date().strftime("%Y-%m-%d")
-        #     elif isinstance(widget, tk.Label):
-        #         task_values[label] = widget.cget("text")        
                 
         if task_values['Deadline'] == "":
             task_values['Deadline'] = None
         if task_values['Main Task ID'] == "":
             task_values['Main Task ID'] = None
         if task_values['Blockers'] == "":
-            task_values['Blockers'] = None     
+            task_values['Blockers'] = None  
+
         #Includ a new one
         task_values['Comments'] = None
         # Database insertion
@@ -1008,8 +1009,11 @@ class TasksOrganizer(tk.Tk):
         cursor.close()
         sqliteConnection.close()
 
-        #Message to inform the user if the database was updated correctly        
-        messagebox.showinfo("Information", "The Rank was updated with success!!!")        
+        #Message to inform the user if the database was updated correctly, but only was pressed the button to update the rank        
+        caller = inspect.stack()[1].function 
+        
+        if caller == '__call__':
+            messagebox.showinfo("Information", "The Rank was updated with success!!!") 
 
     def generateDailyTaskList(self):
         global filePath

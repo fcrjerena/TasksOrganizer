@@ -78,12 +78,18 @@ To manipulate the database during the app development I suggest you to use:
 https://sqlitebrowser.org/dl/
 
 
+
+
 How to use the app (The Graphic Interface):
 
+
 1 - Press "Create A New Database", give a name for this new database 
+
 2 - Press "Open Database" and point the database that you already created to unlock the tabs: Tasks Management, Filters, Statistics
 
+
 Tasks Management: 
+
 
 - Include New Task: Include a new task, just fill the fields properly
 
@@ -95,10 +101,14 @@ Tasks Management:
 
 - List Dependencies: Will list all the tasks with dependence 
 
+
 Filters:
+
 
 You can define in "Filters" a specific filter that you want to apply and press "Show The List With Filter Applied"
 
+
 Statistics: 
+
 
 You can generate a Pizza Graph with the app statistics
