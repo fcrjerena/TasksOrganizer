@@ -1,21 +1,35 @@
 profiles:
-  Personal:
+  Profile1:
     weights:
-      priority: 0.6
-      complexity: 0.3
-      delay: 0.1
+      priority: 0.60
+      complexity: 0.20
+      delay: 0.10
+      textRelevance: 0.10
     relevance_offset: 100
-    deadline_slope: 1.1
+    deadline_slope: 1.10
     tasklist:
       ToDo: 4
       EatTheFrog: 1
-  Professional:
+  Profile2:
     weights:
-      priority: 0.6
-      complexity: 0.3
-      delay: 0.1
+      priority: 0.50
+      complexity: 0.25
+      delay: 0.15
+      textRelevance: 0.10
     relevance_offset: 100
-    deadline_slope: 1.1
+    deadline_slope: 1.10
+    tasklist:
+      ToDo: 8
+      EatTheFrog: 2
+  Profile3:
+    weights:
+      priority: 0.40
+      complexity: 0.20
+      delay: 0.10
+      textRelevance: 0.30
+    relevance_offset: 100
+    deadline_slope: 1.10
     tasklist:
       ToDo: 4
       EatTheFrog: 1
+  
