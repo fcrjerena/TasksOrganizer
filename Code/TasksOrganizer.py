@@ -258,7 +258,7 @@ class TasksOrganizer(tk.Tk):
         ttk.Label(filterFrame, text="Filters").pack(side=tk.LEFT)
 
         filterOptions = [
-            "NoFilter", "FilterTasksByRank", "FilterTasksStatusActive", "FilterTasksStatusBlocked",
+            "NoFilter", "FilterTasksByRank", "FilterTasksByRankAll", "FilterTasksStatusActive", "FilterTasksStatusBlocked",
             "FilterTasksByMostDelayedTasks", "FilterTasksByPriority", "FilterTasksByComplexity", 
             "FilterTasksByCriticality", "FilterTasksStatusDone", "FilterTasksStatusAborted", 
             "FilterTasksbyDateCreated"
@@ -1088,16 +1088,17 @@ class TasksOrganizer(tk.Tk):
             # Dictionary mapping words to specific SQL queries
             queryDict = {
                 'NoFilter': "SELECT * FROM tasks",
-                'FilterTasksByPriority': "SELECT * FROM tasks ORDER by priority DESC",
-                'FilterTasksByComplexity': "SELECT * FROM tasks ORDER by complexity DESC",            
-                'FilterTasksByRank': "SELECT * from tasks ORDER BY rank DESC",
+                'FilterTasksByPriority': "SELECT * FROM tasks ORDER BY priority DESC",
+                'FilterTasksByComplexity': "SELECT * FROM tasks ORDER BY complexity DESC",            
+                'FilterTasksByRank': "SELECT * FROM tasks WHERE status = 'Active' OR status = 'Blocked' ORDER BY rank DESC",
+                'FilterTasksByRankAll': "SELECT * FROM tasks ORDER BY rank DESC",
                 'FilterTasksByMostDelayedTasks': "SELECT * FROM tasks ORDER BY delay DESC",
-                'FilterTasksByCriticality': "SELECT * FROM tasks WHERE (julianday(deadline) > julianday(date()))",
+                'FilterTasksByCriticality': "SELECT * FROM tasks WHERE (julianday(date()) > julianday(deadline)) AND (status = 'Active' OR status = 'Blocked') ORDER BY rank DESC",
                 'FilterTasksStatusActive': "SELECT * FROM tasks WHERE status = 'Active'",
                 'FilterTasksStatusAborted': "SELECT * FROM tasks WHERE status = 'Aborted'",
                 'FilterTasksStatusBlocked': "SELECT * FROM tasks WHERE status = 'Blocked'",
                 'FilterTasksStatusDone': "SELECT * FROM tasks WHERE status = 'Done'",
-                'FilterTasksbyDateCreated': "SELECT * FROM tasks ORDER BY created"      
+                'FilterTasksbyDateCreated': "SELECT * FROM tasks ORDER BY created DESC"      
             }
 
             # Query to fetch priority and delay from the tasks table
