@@ -11,7 +11,6 @@ matplotlib.use('TkAgg',force=True)      #I put this but I still have the problem
 from matplotlib import pyplot as plt
 import numpy as np
 import inspect
-
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
@@ -371,25 +370,22 @@ class TasksOrganizer(tk.Tk):
     def generateTheGraph(self):
         global filePath, fileName
 
-        #The order can't be changed because it is important in createGraphic() function 
-        status_list = ('Aborted','Active','Blocked','Done')  
-
-        #Open the database
-        sqliteConnection = sqlite3.connect(filePath)
-        cursor = sqliteConnection.cursor()
-
-        #Create a figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        graph_title = 'Information about task database: ' + fileName
-        fig.suptitle(graph_title, fontsize=20)
-
         #Function to format info to plot data
         def autopct_format(values):
             def my_format(pct):
                 total = sum(values)
                 val = int(round(pct*total/100.0))
                 return '{:.1f}%\n({v:d})'.format(pct, v=val)
-            return my_format	
+            return my_format	        
+
+        #Create a figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        graph_title = 'Information about task database: ' + fileName
+        fig.suptitle(graph_title, fontsize=20)    
+
+        #Open the database
+        sqliteConnection = sqlite3.connect(filePath)
+        cursor = sqliteConnection.cursor()    
 
         #Read data from database
         statusList = []
@@ -409,9 +405,7 @@ class TasksOrganizer(tk.Tk):
         y = statusList
 
         graph1list = []	
-
-        #In test, forcing the tuple should be a list... :^)
-        tuple_read = [1,2,3,4]
+        tuple_read = []
 
         for x in range(4):
             tuple_read = y[x]
@@ -420,23 +414,26 @@ class TasksOrganizer(tk.Tk):
         
         y = np.array(graph1list)	
 
+        #The order can't be changed because it is important in createGraphic() function 
+        status_list = ('Aborted','Active','Blocked','Done')  
+
         #Configure the graph 1 (Main)
         mylabels = status_list
         mycolors = ["m", "b", "lightblue", "lightgreen"] 
         myexplode = [0, 0, 0, 0]
         textprops = {"fontsize":10} # Font size of text in pie chart
         
-        ax2.pie(y, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=270, radius = 0.8, autopct=autopct_format(y), textprops =textprops)
+        ax2.pie(y, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=270, radius = 0.8, autopct=autopct_format(y), textprops =textprops)        
         
-        cursor.execute("SELECT COUNT(*) FROM tasks WHERE (status = 'Active' AND (rank > 100));")
+        cursor.execute("SELECT COUNT(*) FROM tasks WHERE (status = 'Active' AND (julianday(date()) > julianday(deadline)))")
         y = cursor.fetchall() 
         
         graph2list = []	
 
         #In test...
         tuple_read = y[0]
-        graph2list.append(tuple_read[0])
-        graph2list.append(graph1list[1]-graph1list[0])
+        graph2list.append(tuple_read[0])        
+        graph2list.append(graph1list[1]-tuple_read[0])
         
         #Configure the graph 2 (Secondary)
         mylabels = ["Critical","Non Critical"]
@@ -444,8 +441,8 @@ class TasksOrganizer(tk.Tk):
         myexplode = [0.1, 0]
         textprops = {"fontsize":15} # Font size of text in pie chart	
         
-        new_var = ax1.pie(graph2list, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=90, radius = 1.0, autopct=autopct_format(graph2list), textprops =textprops)
-        ax1.legend(title = "Status 'Active'", loc="upper left")
+        ax1.pie(graph2list, labels = mylabels, colors = mycolors, explode = myexplode, shadow = True, startangle=90, radius = 1.0, autopct=autopct_format(graph2list), textprops =textprops)
+        ax1.legend(title = "Status 'Active'", loc="best")
 
         plt.show(block=False)        
 
@@ -1048,17 +1045,46 @@ class TasksOrganizer(tk.Tk):
     def generateDailyTaskList(self):
         global filePath
 
+        #Open the yaml file with the configuration
+        profile_settings = self.getProfileSettings('Profile1')
+                
+        if not profile_settings:
+            raise ValueError(f"Profile '{'Profile1'}' not found in the configuration.")
+
+        #Recovery the information from the yaml file               
+        tasklist = profile_settings.get('tasklist', {})
+        ToDo = tasklist.get('ToDo', None)
+        EatTheFrog = tasklist.get('EatTheFrog', None)
+        totalTasks = ToDo + EatTheFrog
+
         # Connect to the SQLite database
         sqliteConnection = sqlite3.connect(filePath)
-        cursor = sqliteConnection.cursor()        
+        cursor = sqliteConnection.cursor()         
 
-        # Query to fetch priority and delay fromopendatabeopenthe tasks table
-        query = """
-        SELECT * FROM tasks
-        WHERE (status = "Active") ORDER BY rank DESC LIMIT 5;
-        """   
+        query = f"""
+        WITH RankedTasks AS (
+            SELECT *
+            FROM tasks
+            WHERE status = 'Active'
+            ORDER BY rank DESC
+            LIMIT {totalTasks}
+        )
+        SELECT *
+        FROM RankedTasks
+        ORDER BY 
+            CASE complexity
+                WHEN 'Super_Slow' THEN 1
+                WHEN 'Slow' THEN 2
+                WHEN 'Medium' THEN 3
+                WHEN 'Fast' THEN 5
+                WHEN 'Super_Fast' THEN 8
+                ELSE 0  -- Default case if complexity is not in the list
+            END;
+        """
+        
         cursor.execute(query)
-        rows = cursor.fetchall()     
+        rows = cursor.fetchall()   
+
         self.display_table(rows)    
 
     def listDependencies(self):
@@ -1087,9 +1113,35 @@ class TasksOrganizer(tk.Tk):
 
             # Dictionary mapping words to specific SQL queries
             queryDict = {
-                'NoFilter': "SELECT * FROM tasks",
-                'FilterTasksByPriority': "SELECT * FROM tasks ORDER BY priority DESC",
-                'FilterTasksByComplexity': "SELECT * FROM tasks ORDER BY complexity DESC",            
+                'NoFilter': "SELECT * FROM tasks",                
+                'FilterTasksByPriority':   
+                    """
+                    SELECT *
+                    FROM tasks
+                    ORDER BY 
+                        CASE priority
+                            WHEN 'Very_High' THEN 8
+                            WHEN 'High' THEN 5
+                            WHEN 'Medium' THEN 3
+                            WHEN 'Low' THEN 2
+                            WHEN 'Very_Low' THEN 1
+                            ELSE 0  -- Default case if priority is not in the list
+                        END DESC;
+                    """,
+                'FilterTasksByComplexity':   
+                    """
+                    SELECT *
+                    FROM tasks
+                    ORDER BY 
+                        CASE complexity
+                            WHEN 'Super_Slow' THEN 1
+                            WHEN 'Slow' THEN 2
+                            WHEN 'Medium' THEN 3
+                            WHEN 'Fast' THEN 5
+                            WHEN 'Super_Fast' THEN 8
+                            ELSE 0  -- Default case if complexity is not in the list
+                        END;
+                    """,
                 'FilterTasksByRank': "SELECT * FROM tasks WHERE status = 'Active' OR status = 'Blocked' ORDER BY rank DESC",
                 'FilterTasksByRankAll': "SELECT * FROM tasks ORDER BY rank DESC",
                 'FilterTasksByMostDelayedTasks': "SELECT * FROM tasks ORDER BY delay DESC",
