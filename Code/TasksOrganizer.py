@@ -97,7 +97,20 @@ class TasksOrganizer(tk.Tk):
 
             # Configure tag colors for alternating row effect
             tree.tag_configure('oddrow', background='lightgrey')
-            tree.tag_configure('evenrow', background='white')                   
+            tree.tag_configure('evenrow', background='white') 
+
+        def highLightEatTheFrog():
+            #Open the yaml file with the configuration
+            profile_settings = self.getProfileSettings('Profile1')
+                    
+            if not profile_settings:
+                raise ValueError(f"Profile '{'Profile1'}' not found in the configuration.")
+
+            #Recovery the information from the yaml file               
+            tasklist = profile_settings.get('tasklist', {})            
+            EatTheFrog = tasklist.get('EatTheFrog', None)
+
+            return EatTheFrog
 
         def onClosing():            
             root.destroy()            
@@ -168,13 +181,29 @@ class TasksOrganizer(tk.Tk):
         hsb.pack(side='bottom', fill='x')
         tree.configure(xscrollcommand=hsb.set)
 
-        # Insert data into Treeview with alternating row colors
+        #Paint in red the Eat the Frog tasks
+        redLineNumber = highLightEatTheFrog()
+
+        #if was called when the user asked for a Daily Task List        
+        caller = inspect.stack()[1].function        
+
+        if caller == 'generateDailyTaskList':
+            # Define the flag
+            dailyListModeOn = True
+        else:
+            dailyListModeOn = False
+
         for i, row in enumerate(data):
-            tree.insert('', tk.END, values=row, tags=('oddrow',) if i % 2 == 0 else ('evenrow',))
+            if dailyListModeOn and i < redLineNumber:
+                tree.insert('', tk.END, values=row, tags=('redrow',))
+            else:
+                tag = 'oddrow' if i % 2 == 0 else 'evenrow'
+                tree.insert('', tk.END, values=row, tags=(tag,))
 
         # Configure tag colors for alternating row effect
         tree.tag_configure('oddrow', background='lightgrey')
         tree.tag_configure('evenrow', background='white')
+        tree.tag_configure('redrow', background='red')
 
         # Bind the on_closing function to the window close event
         root.protocol("WM_DELETE_WINDOW", onClosing)
