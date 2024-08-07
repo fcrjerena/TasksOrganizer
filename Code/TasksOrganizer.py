@@ -758,6 +758,25 @@ class TasksOrganizer(tk.Tk):
         taskIDs = [row[0] for row in cursor.fetchall()]
         conn.close()
         return taskIDs
+    
+    class StateMachine:
+        def __init__(self):
+            self.previousState = None
+            self.currentState = None
+
+        def updateState(self, newState):
+            self.previousState = self.currentState
+            self.currentState = newState
+
+            if self.previousState == "Active" and self.currentState == "Done":
+                #self.state_changed()
+                return True
+            else:
+                return False
+
+        def stateChanged(self):
+            # Stub function to be called when state changes from "Active" to "Done"
+            print("State changed from Active to Done")       
 
     def editTask(self):
         self.taskIDs = self.getAllTaskIDs()
@@ -786,14 +805,19 @@ class TasksOrganizer(tk.Tk):
             if isinstance(widget, tk.Entry):
                 widget.insert(0, default_value)
 
-        self.searchByIDButton = ttk.Button(self.editTaskWindow, text="Search by ID", command=self.searchByID)        
+        #self.searchByIDButton = ttk.Button(self.editTaskWindow, text="Search by ID", command=self.searchByID(StateMachine)) 
+        self.searchByIDButton = ttk.Button(self.editTaskWindow, text="Search by ID", command=lambda test=self.StateMachine:  self.searchByID(test))             
         self.searchByIDButton.grid(row=0, column=2, padx=10, pady=5)
 
-        self.editTaskButton = ttk.Button(self.editTaskWindow, text="Edit Task", command=self.saveEditedTask)
-        self.editTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)        
+        #self.editTaskButton = ttk.Button(self.editTaskWindow, text="Edit Task", command=self.saveEditedTask)
+        self.editTaskButton = ttk.Button(self.editTaskWindow, text="Edit Task", command=lambda test=self.StateMachine: self.saveEditedTask(test))
+        self.editTaskButton.grid(row=len(self.labels), column=0, columnspan=2, pady=10)    
 
-    def searchByID(self):
+    def searchByID(self, StateMachine):
         global filePath
+
+        # Example usage
+        self.stateMachine = StateMachine()
 
         task_id = self.widgets["Task ID"].get()
         sqliteConnection = sqlite3.connect(filePath)
@@ -820,10 +844,16 @@ class TasksOrganizer(tk.Tk):
                     if value == None:
                         value = ""
                     widget.set(value)
+            
+            # Updating states
+            self.stateMachine.updateState(task[9])            
+            
         else:
             tk.messagebox.showerror("Error", "Task ID not found!")   
 
-    def saveEditedTask(self):
+    def saveEditedTask(self, StateMachine):
+        global filePath
+
         task_values = {}
         for label, widget, default_value in self.labels:
             if isinstance(widget, tk.Entry):
@@ -853,6 +883,21 @@ class TasksOrganizer(tk.Tk):
 
         #Close the form after edit the task
         self.editTaskWindow.destroy()
+
+        updateActive2Done = self.stateMachine.updateState(task_values['Status'])                  
+
+        if updateActive2Done:
+            taskId = task_values['Main Task ID']
+
+            # Connect to the SQLite database
+            sqliteConnection = sqlite3.connect(filePath)
+            cursor = sqliteConnection.cursor()     
+            cursor.execute("UPDATE tasks SET Status = 'Active' WHERE id = ?", (taskId,))
+            
+            # Commit the transaction to save changes
+            sqliteConnection.commit()
+            cursor.close()
+            sqliteConnection.close()
 
         #Update the rank after to edit a task
         self.updateRankNew()
